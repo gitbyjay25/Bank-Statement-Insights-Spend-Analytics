@@ -1,16 +1,7 @@
-from fastapi import FastAPI
-from app.services.parsing.csv_parser import parse_csv
-
-app = FastAPI()
-
-@app.get('/')
-def root():
-    return {'status' : 'ok'}
-
-
 from fastapi import FastAPI, UploadFile, File
 from app.services.parsing.csv_parser import parse_csv
 from app.services.parsing.pdf_parser import parse_pdf
+from app.db.connection import save_statement, save_transactions
 
 
 app = FastAPI()
@@ -34,6 +25,11 @@ async def upload_statement(file: UploadFile = File(...)):
     else:
         return {'error': 'Unsupported file format'}
     
-    return [t.dict() for t in transactions]
-
+    statement_id = save_statement(file.filename)
+    save_transactions(statement_id, transactions)
     
+    return {
+        'statement_id': statement_id,
+        'transactions_count': len(transactions),
+        'transactions': [t.dict() for t in transactions]
+    }
