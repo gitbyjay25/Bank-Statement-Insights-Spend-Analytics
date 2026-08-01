@@ -43,13 +43,11 @@ def save_statement(filename: str, account_label: str = None):
 
 def save_transactions(statement_id: int, transactions: list):
     conn = get_connection()
-    if conn is None:
-        raise RuntimeError("Database connection failed. Please check your DB credentials in backend/.env")
     cursor = conn.cursor()
     for txn in transactions:
         cursor.execute(
-            "INSERT INTO transactions (statement_id, txn_date, description, amount, txn_type) VALUES (%s, %s, %s, %s, %s)",
-            (statement_id, txn.txn_date, txn.description, txn.amount, txn.txn_type.value)
+            "INSERT INTO transactions (statement_id, txn_date, description, amount, txn_type, category, confidence_score) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+            (statement_id, txn.txn_date, txn.description, txn.amount, txn.txn_type.value, txn.category, txn.confidence_score)
         )
     conn.commit()
     cursor.close()

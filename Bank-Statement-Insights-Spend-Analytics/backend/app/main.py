@@ -2,6 +2,8 @@ from fastapi import FastAPI, UploadFile, File
 from app.services.parsing.csv_parser import parse_csv
 from app.services.parsing.pdf_parser import parse_pdf
 from app.db.connection import save_statement, save_transactions
+from app.services.categorization.categorizer import categorize_transaction
+from app.models.transaction import Transaction
 
 
 app = FastAPI()
@@ -24,6 +26,11 @@ async def upload_statement(file: UploadFile = File(...)):
         transactions = parse_pdf(file_content)
     else:
         return {'error': 'Unsupported file format'}
+    
+    for txn in transactions:
+        category, confidence = categorize_transaction(txn.description)
+        txn.category = category
+        txn.confidence_score = confidence
     
     statement_id = save_statement(file.filename)
     save_transactions(statement_id, transactions)

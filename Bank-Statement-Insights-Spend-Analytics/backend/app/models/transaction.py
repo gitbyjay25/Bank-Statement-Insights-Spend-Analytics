@@ -13,3 +13,5 @@ class Transaction(BaseModel):
     description: str
     amount: float
     txn_type: TransactionType
+    category: str = None
+    confidence_score: float = None
