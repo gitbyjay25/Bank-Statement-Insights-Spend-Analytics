@@ -1,4 +1,5 @@
 from app.db.connection import get_connection
+from decimal import Decimal
 
 
 def generate_advisory(statement_id: int):
@@ -20,8 +21,8 @@ def generate_advisory(statement_id: int):
     
     recommendations = []
     
-    income = result['income'] or 0
-    investment_amount = result['investment_amount'] or 0
+    income = float(result['income'] or 0)
+    investment_amount = float(result['investment_amount'] or 0)
     investment_count = result['investment_count'] or 0
     
     if investment_count == 0 and income > 0:
