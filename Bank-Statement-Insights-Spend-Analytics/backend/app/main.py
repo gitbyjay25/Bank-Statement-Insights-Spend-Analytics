@@ -5,9 +5,27 @@ from app.db.connection import save_statement, save_transactions
 from app.services.categorization.categorizer import categorize_transaction
 from app.services.analytics.analytics import get_spend_by_category, get_surplus
 from app.services.advisory.advisor import generate_advisory
+from fastapi.responses import StreamingResponse
+import csv
+import io
+
+
+
+
+from fastapi.middleware.cors import CORSMiddleware
+
+
 
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get('/')
@@ -55,3 +73,27 @@ def get_analytics(statement_id: int):
         'financial_summary': surplus,
         'recommendations': recommendations
     }
+
+@app.get('/export/{statement_id}')
+def export_transactions(statement_id: int):
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT txn_date, description, amount, txn_type, category, confidence_score
+        FROM transactions
+        WHERE statement_id = %s
+    """, (statement_id,))
+    transactions = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    
+    output = io.StringIO()
+    writer = csv.DictWriter(output, fieldnames=['txn_date', 'description', 'amount', 'txn_type', 'category', 'confidence_score'])
+    writer.writeheader()
+    writer.writerows(transactions)
+    
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment;filename=transactions.csv"}
+    )
